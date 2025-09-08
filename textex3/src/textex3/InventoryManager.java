@@ -100,7 +100,7 @@ public class InventoryManager {
         System.out.println("--- 出庫準備中 ---");
 
         // ヘッダー表示：倉庫と同様に列の意味を明示
-        System.out.printf("%-10s: %-9s: %-20s%n\", \"商品ID\", \"在庫数\", \"最古入庫日時");
+        System.out.printf("%-10s: %-9s: %-20s%n", "商品ID", "在庫数", "最古入庫日時");
 
         // 出庫準備中の在庫を「在庫数（quantity合計）」の降順で表示
         outboundPrep.entrySet().stream()
