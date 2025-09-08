@@ -1,5 +1,6 @@
 package textex3;
 
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
@@ -64,11 +65,18 @@ public class InventoryManager {
     }
 
     /**
-     * 在庫一覧表示処理：倉庫内と出庫準備中の在庫状況を整形して表示する。
-     * 表示順や最古の入庫日時の取得も含め、構造化された出力を行う。
+     * 在庫一覧表示処理：
+     * 倉庫内（FIFO）と出庫準備中（LIFO）の在庫状況を整形して表示する。
+     * 表示される「在庫数」はロット数ではなく、各ロットの数量（quantity）の合計値。
+     * 表示フォーマットは桁揃えを意識し、視認性と意味の明確化を両立。
      */
     public void showInventory() {
+        // 日時フォーマッター（秒まで表示、ナノ秒除去）
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         System.out.println("--- 倉庫内 ---");
+
+        // ヘッダー表示：各列の意味を明示（商品ID・在庫数・最古入庫日時）
+        System.out.printf("%-10s: %-9s: %-20s%n", "商品ID", "在庫数", "最古入庫日時");
 
         // 商品ID昇順で倉庫内の在庫を表示
         warehouse.entrySet().stream()
@@ -76,24 +84,45 @@ public class InventoryManager {
             .forEach(entry -> {
                 Queue<Lot> queue = entry.getValue();
                 if (!queue.isEmpty()) {
-                    Lot oldest = queue.peek(); // 最古のロット（先頭）
-                    System.out.printf("%d : %d : %s%n",
-                        entry.getKey(), queue.size(), oldest.getReceivedAt());
+                    Lot oldest = queue.peek(); // FIFO構造の先頭＝最古ロット
+                    // 各ロットの数量を合計して「在庫数」として表示
+                    int totalQuantity = queue.stream().mapToInt(Lot::getQuantity).sum();
+                    
+                    // showInventory内で日時を整形（Lot側は変更不要）
+                    String formattedDate = oldest.getReceivedAt().format(formatter);
+
+                    // 桁揃えされた整形出力：意味の構造を視覚的に表現
+                    System.out.printf("%-12d: %-12d: %-20s%n",
+                        entry.getKey(), totalQuantity, formattedDate);
                 }
             });
 
         System.out.println("--- 出庫準備中 ---");
 
-        // 在庫数降順で出庫準備中の在庫を表示
+        // ヘッダー表示：倉庫と同様に列の意味を明示
+        System.out.printf("%-10s: %-9s: %-20s%n\", \"商品ID\", \"在庫数\", \"最古入庫日時");
+
+        // 出庫準備中の在庫を「在庫数（quantity合計）」の降順で表示
         outboundPrep.entrySet().stream()
-            .sorted((a, b) -> Integer.compare(b.getValue().size(), a.getValue().size()))
+            .sorted((a, b) -> {
+                int qtyA = a.getValue().stream().mapToInt(Lot::getQuantity).sum();
+                int qtyB = b.getValue().stream().mapToInt(Lot::getQuantity).sum();
+                return Integer.compare(qtyB, qtyA); // 在庫数降順
+            })
             .forEach(entry -> {
                 Stack<Lot> stack = entry.getValue();
                 if (!stack.isEmpty()) {
-                    Lot oldest = stack.lastElement(); // 最古のロット（スタックの底）
-                    System.out.printf("%d : %d : %s%n",
-                        entry.getKey(), stack.size(), oldest.getReceivedAt());
+                    Lot oldest = stack.lastElement(); // スタックの底＝最古ロット
+                    int totalQuantity = stack.stream().mapToInt(Lot::getQuantity).sum();
+                    
+                    // showInventory内で日時を整形
+                    String formattedDate = oldest.getReceivedAt().format(formatter);
+
+                    // 整形出力：出庫準備中の在庫状況を構造的に表示
+                    System.out.printf("%-12d: %-12d: %-20s%n",
+                        entry.getKey(), totalQuantity, formattedDate);
                 }
             });
     }
+
 }
