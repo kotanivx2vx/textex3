@@ -24,7 +24,7 @@ public class InventoryApp {
         try {
             while (true) {
                 showMenu(); // メニュー表示
-                int choice = getIntInput("選択 > "); // ユーザー選択
+                int choice = getIntInput("選択 > ",1); // ユーザー選択
                 switch (choice) {
                     case 1 -> handleInbound();     // 入庫登録
                     case 2 -> handlePrep();        // 出庫準備
@@ -60,9 +60,9 @@ public class InventoryApp {
      * ユーザーから商品ID・ロット番号・数量を受け取り、InventoryManager に登録を依頼。
      */
     private static void handleInbound() {
-        long productId = getLongInput("商品ID > ");
-        long lotNumber = getLongInput("ロット番号 > ");
-        int quantity = getIntInput("数量 > ");
+        long productId = getLongInput("商品ID > ", 10);
+        long lotNumber = getLongInput("ロット番号 > ", 10);
+        int quantity = getIntInput("数量 > ", 5);
         manager.registerInbound(productId, lotNumber, quantity);
     }
 
@@ -72,7 +72,7 @@ public class InventoryApp {
      * 結果を画面に表示。
      */
     private static void handlePrep() {
-        long productId = getLongInput("商品ID > ");
+        long productId = getLongInput("商品ID > ", 10);
         Lot lot = manager.prepareOutbound(productId);
         if (lot != null) {
             System.out.printf("準備完了: ロット %d, 数量 %d, 入庫日時 %s%n",
@@ -88,7 +88,7 @@ public class InventoryApp {
      * 結果を画面に表示。
      */
     private static void handleOutbound() {
-        long productId = getLongInput("商品ID > ");
+        long productId = getLongInput("商品ID > ", 10);
         Lot lot = manager.executeOutbound(productId);
         if (lot != null) {
             System.out.printf("出庫完了: ロット %d, 数量 %d, 入庫日時 %s%n",
@@ -99,37 +99,43 @@ public class InventoryApp {
     }
 
     /**
-     * 整数入力を受け付けるユーティリティ。
-     * 入力値が不正な場合は再入力を促す。
+     * 長整数入力を受け付けるユーティリティ。
+     * 指定された桁数以内の数値のみを許容し、業務ルールに基づく入力制約をUI層で担保する。
      *
      * @param prompt 表示するプロンプト文字列
-     * @return 整数値
+     * @param maxDigits 許容する最大桁数（例：10桁）
+     * @return 長整数値（long型）
      */
-    private static int getIntInput(String prompt) {
+    private static long getLongInput(String prompt, int maxDigits) {
         while (true) {
-            try {
-                System.out.print(prompt);
-                return Integer.parseInt(scanner.nextLine());
-            } catch (NumberFormatException e) {
-                System.out.println("数値を入力してください。");
+            System.out.print(prompt);
+            String input = scanner.nextLine();
+            // 正規表現により桁数制限を明示的にチェック（1〜maxDigits桁の数字のみ許容）
+            if (input.matches("\\d{1," + maxDigits + "}")) {
+                return Long.parseLong(input);
+            } else {
+                System.out.printf("%d桁以内の数値を入力してください。%n", maxDigits);
             }
         }
     }
 
     /**
-     * 長整数入力を受け付けるユーティリティ。
-     * 入力値が不正な場合は再入力を促す。
+     * 整数入力を受け付けるユーティリティ。
+     * 指定された桁数以内の数値のみを許容し、業務ルールに基づく入力制約をUI層で担保する。
      *
      * @param prompt 表示するプロンプト文字列
-     * @return 長整数値
+     * @param maxDigits 許容する最大桁数（例：5桁）
+     * @return 整数値（int型）
      */
-    private static long getLongInput(String prompt) {
+    private static int getIntInput(String prompt, int maxDigits) {
         while (true) {
-            try {
-                System.out.print(prompt);
-                return Long.parseLong(scanner.nextLine());
-            } catch (NumberFormatException e) {
-                System.out.println("数値を入力してください。");
+            System.out.print(prompt);
+            String input = scanner.nextLine();
+            // 正規表現により桁数制限を明示的にチェック（1〜maxDigits桁の数字のみ許容）
+            if (input.matches("\\d{1," + maxDigits + "}")) {
+                return Integer.parseInt(input);
+            } else {
+                System.out.printf("%d桁以内の数値を入力してください。%n", maxDigits);
             }
         }
     }
